@@ -75,7 +75,7 @@ std::vector<CRecipient> createSparkMintRecipients(const std::vector<spark::Minte
 std::pair<CAmount, std::vector<CSparkMintMeta>> SelectSparkCoins(
         CAmount required,
         bool subtractFeeFromAmount,
-        std::list<CSparkMintMeta> coins,
+        const std::list<CSparkMintMeta>& coins,
         std::size_t mintNum,
         std::size_t utxoNum,
         std::size_t additionalTxSize,

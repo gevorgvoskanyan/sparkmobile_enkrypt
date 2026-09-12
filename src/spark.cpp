@@ -1872,7 +1872,9 @@ CreateSparkSpendTxResult *js_createSparkSpendTransaction( const spark::SpendKey 
                                                           const std::unordered_map< std::uint64_t, spark::CoverSetData > * const cover_set_data_all,
                                                           const std::map< std::uint64_t, uint256 > * const id_and_block_hashes_all,
                                                           const char * const tx_hash_hex_string,
-                                                          const std::int32_t additional_tx_size )
+                                                          const std::int32_t additional_tx_size,
+                                                          const std::int32_t spend_transaction_version,
+                                                          const char * const extension_commitment_hex_string )
 {
    try {
       if ( !spend_key || !full_view_key || !incoming_view_key || !recipients || !private_recipients ||
@@ -1905,13 +1907,18 @@ CreateSparkSpendTxResult *js_createSparkSpendTransaction( const spark::SpendKey 
                 << "\ncover_set_data_all = " << container_streamer( *cover_set_data_all )
                 << "\nid_and_block_hashes_all = " << container_streamer( *id_and_block_hashes_all )
                 << "\ntx_hash_sig = " << tx_hash_hex_string// to_hex_string( tx_hash_sig_buf, tx_hash_sig_bufsize )
-                << "\nadditional_tx_size = " << additional_tx_size << std::endl;
+                << "\nadditional_tx_size = " << additional_tx_size
+                << "\nspend_transaction_version = " << spend_transaction_version
+                << "\nextension_commitment_hex_string = " << ( extension_commitment_hex_string ? extension_commitment_hex_string : "<NULL>" )
+                << std::endl;
 #endif
 
       auto result = std::make_unique< CreateSparkSpendTxResult >();
       createSparkSpendTransaction( *spend_key, *full_view_key, *incoming_view_key, *recipients, *private_recipients, *coins,
                                    *cover_set_data_all, *id_and_block_hashes_all,
                                    uint256S( tx_hash_hex_string ), additional_tx_size,
+                                   static_cast< spark::SpendTransactionVersion >( boost::numeric_cast< std::uint8_t >( spend_transaction_version ) ),
+                                   extension_commitment_hex_string ? uint256S( extension_commitment_hex_string ) : uint256(),
                                    result->fee, result->serialized_spend, result->output_scripts, result->spent_coins );
       return result.release();
    }
