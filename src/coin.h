@@ -1,5 +1,7 @@
 #ifndef FIRO_SPARK_COIN_H
 #define FIRO_SPARK_COIN_H
+
+#include <cstdint>
 #include "bpplus.h"
 #include "keys.h"
 #include <math.h>
