@@ -653,7 +653,6 @@ CSparkMintMeta getMetadata(const spark::Coin& coin, const spark::IncomingViewKey
     meta.type = coin.type;
     meta.coin = coin;
 
-    assert(!meta.k.isZero());
     return meta;
 }
 
@@ -669,7 +668,6 @@ spark::InputCoinData getInputData(spark::Coin coin, const spark::FullViewKey& fu
     inputCoinData.k = identifiedCoinData.k;
     inputCoinData.v = identifiedCoinData.v;
 
-    assert(!inputCoinData.k.isZero());
     return inputCoinData;
 }
 
@@ -1281,6 +1279,7 @@ spark::Coin *js_getCoinFromMeta( const CSparkMintMeta * const meta, const spark:
  */
 CSparkMintMeta *js_getMetadata( const spark::Coin * const coin, const spark::IncomingViewKey * const incoming_view_key )
 {
+   static int success_count, failure_count;
    try {
       if ( !coin ) {
          std::cerr << "Error calling getMetadata: Provided coin pointer is null." << std::endl;
@@ -1291,21 +1290,21 @@ CSparkMintMeta *js_getMetadata( const spark::Coin * const coin, const spark::Inc
          return nullptr;
       }
       auto meta = std::make_unique< CSparkMintMeta >( getMetadata( *coin, *incoming_view_key ) );
-      static int success_count, failure_count;
-      if ( meta->k.isZero() ) { // this is how getMetadata()'s failure can be detected, as currently implemented
-         ++failure_count;
-#if SPARK_DEBUGGING_OUTPUT
-         std::cout << "Wrapped getMetadata(" << coin << ',' << incoming_view_key << ") function failed to return a proper CSparkMintMeta object; nsuccess=" << success_count << " nfailure=" << failure_count << std::endl;
-#endif
-         return nullptr;
-      }
+      assert( !meta->k.isZero() );
       ++success_count;
       // this output should be very rare in comparison to the number of failures, so perhaps it's ok to have this printed unconditionally
       std::cout << "Wrapped getMetadata(" << coin << ',' << incoming_view_key << ") function succeeded in returning a proper CSparkMintMeta; nsuccess=" << success_count << " nfailure=" << failure_count << std::endl;
       return meta.release();
    }
    catch ( const std::exception &e ) {
-      std::cerr << "Error in getMetadata: " << e.what() << std::endl;
+      ++failure_count;
+      if ( e.what() == "Unable to identify coin"sv ) {
+#if SPARK_DEBUGGING_OUTPUT
+         std::cout << "Wrapped getMetadata(" << coin << ',' << incoming_view_key << ") function failed to identify the coin; nsuccess=" << success_count << " nfailure=" << failure_count << " : " << e.what() << std::endl;
+#endif
+      }
+      else
+         std::cerr << "Error in getMetadata(" << coin << ',' << incoming_view_key << "): " << e.what() << std::endl;
       return nullptr;
    }
 }
@@ -1336,14 +1335,14 @@ spark::InputCoinData *js_getInputData( const spark::Coin * const coin, const spa
          return nullptr;
       }
       auto data = std::make_unique< spark::InputCoinData >( getInputData( *coin, *full_view_key, *incoming_view_key ) );
-      if ( data->k.isZero() ) { // this is how getInputData()'s failure can be detected, as currently implemented
-         std::cerr << "Wrapped getInputData() function failed to return a proper InputCoinData object." << std::endl;
-         return nullptr;
-      }
+      assert( !data->k.isZero() );
       return data.release();
    }
    catch ( const std::exception &e ) {
-      std::cerr << "Error in getInputData: " << e.what() << std::endl;
+      if ( e.what() == "Unable to identify coin"sv )
+         std::cerr << "Wrapped getInputData function failed to identify the coin: " << e.what() << std::endl;
+      else
+         std::cerr << "Error in getInputData: " << e.what() << std::endl;
       return nullptr;
    }
 }
