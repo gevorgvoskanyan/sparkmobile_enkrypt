@@ -1917,7 +1917,7 @@ CreateSparkSpendTxResult *js_createSparkSpendTransaction( const spark::SpendKey 
                                    *cover_set_data_all, *id_and_block_hashes_all,
                                    uint256S( tx_hash_hex_string ), additional_tx_size,
                                    static_cast< spark::SpendTransactionVersion >( boost::numeric_cast< std::uint8_t >( spend_transaction_version ) ),
-                                   extension_commitment_hex_string ? uint256S( extension_commitment_hex_string ) : uint256(),
+                                   extension_commitment_hex_string && *extension_commitment_hex_string ? uint256S( extension_commitment_hex_string ) : uint256(),
                                    result->fee, result->serialized_spend, result->output_scripts, result->spent_coins );
       return result.release();
    }
