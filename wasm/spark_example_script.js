@@ -268,7 +268,6 @@ spark().then(
        }
 
        // Free allocated memory
-       Module._free(serialContextPointer);
        Module._free(outputsPointerArray);
        Module.ccall("js_freeRecipientVector", null, ["number"], [recipientsVectorPtr]);
 
@@ -280,7 +279,7 @@ spark().then(
            "js_deserializeCoin",            // C++ function name
            "number",                        // Return type
            ["number", "number"],            // Argument types
-           [serializedCoinPointer, serializedCoin.length] // Arguments
+           [serializedCoinPointer, serializedCoin.length, serialContextPointer, serialContext.length] // Arguments
        );
        if (!deserializedCoinObj) {
            throw new Error('Failed to deserialize coin.');
@@ -643,15 +642,12 @@ spark().then(
        const additionalTxSize = 15;
 
        // Create the spend transaction
-       const txHashSig = new Uint8Array([ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20 ]);
-       const txHashSigPointer = Module._malloc(txHashSig.length);
-       Module.HEAPU8.set(txHashSig, txHashSigPointer);
        const spendTransactionVersion = 1;
        const extensionCommitmentHex = "";
        const result = Module.ccall(
            "js_createSparkSpendTransaction",
            "number",
-           ["number", "number", "number", "number", "number", "number", "number", "number", "number", "string", "number", "number", "string"],
+           ["number", "number", "number", "number", "number", "number", "number", "number", "string", "number", "number", "string"],
            [spendKeyObj, fullViewKeyObj, incomingViewKeyObj, recipientsVector, privateRecipientsVector,
             coinsList, coverSetDataMap, idAndBlockHashesMap, txHashSigHex, additionalTxSize
                // the following 2 parameters are added in Spark V2:
@@ -745,6 +741,7 @@ spark().then(
        Module.ccall("js_freeCoverSetDataMapForCreateSparkSpendTransaction", null, ["number"], [coverSetDataMap]);
        Module.ccall("js_freeIdAndBlockHashesMap", null, ["number"], [idAndBlockHashesMap]);
        Module.ccall("js_freeCoin", null, ["number"], [deserializedCoinObj]);
+       Module.ccall("js_freeCoin", null, ["number"], [coinFromMetaObj]);
        Module.ccall("js_freeIdentifiedCoinData", null, ["number"], [identifiedCoinObj]);
        Module.ccall("js_freeCSparkMintMeta", null, ["number"], [metadataObj]);
        Module.ccall("js_freeAddress", null, ["number"], [addressObj]);
@@ -752,6 +749,9 @@ spark().then(
        Module.ccall("js_freeFullViewKey", null, ["number"], [fullViewKeyObj]);
        Module.ccall("js_freeSpendKey", null, ["number"], [spendKeyObj]);
        Module.ccall("js_freeSpendKeyData", null, ["number"], [spendKeyDataObj]);
+       Module._free(serializedCoinPointer);
+       Module._free(serialContextPointer);
+       Module._free(coverSetRepresentationPointer);
        Module._free(keyDataPtr);
 
    } catch (error) {

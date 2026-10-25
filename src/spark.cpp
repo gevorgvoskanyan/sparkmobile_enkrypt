@@ -693,6 +693,8 @@ spark::InputCoinData getInputData(std::pair<spark::Coin, CSparkMintMeta> coin, c
 spark::Coin deserializeCoin( const unsigned char * const serialized_coin, const std::uint32_t serialized_data_length,
                              const unsigned char * const serial_context, const std::uint32_t serial_context_length )
 {
+    assert( serialized_coin );
+    assert( serial_context );
     const std::vector< unsigned char > vec( serialized_coin, serialized_coin + serialized_data_length );
     CDataStream stream( vec, SER_NETWORK, PROTOCOL_VERSION );
     spark::Coin coin( spark::Params::get_default() );
@@ -706,7 +708,7 @@ static spark::IncomingViewKey deserializeIncomingViewKey( const unsigned char * 
 {
     const std::vector< unsigned char > vec( p, p + len );
     CDataStream stream( vec, SER_NETWORK, PROTOCOL_VERSION );
-    spark::IncomingViewKey incoming_view_key;
+    spark::IncomingViewKey incoming_view_key( spark::Params::get_default() );
     stream >> incoming_view_key;
     return incoming_view_key;
 }
@@ -1048,8 +1050,9 @@ const std::vector< CRecipient > *js_createSparkMintRecipients( const spark::Mint
 {
    BOOST_SCOPE_EXIT( &outputs, outputs_length )
    {
-      for ( std::size_t i = 0; i < outputs_length; ++i )
-         delete outputs[ i ];
+      if ( outputs )
+         for ( std::size_t i = 0; i < outputs_length; ++i )
+            delete outputs[ i ];
    }
    BOOST_SCOPE_EXIT_END
 
@@ -1229,6 +1232,10 @@ spark::Coin *js_deserializeCoin( const unsigned char * const serialized_data, co
    try {
       if ( !serialized_data ) {
          std::cerr << "Error calling deserializeCoin: Provided serialized_data pointer is null." << std::endl;
+         return nullptr;
+      }
+      if ( !serial_context ) {
+         std::cerr << "Error calling deserializeCoin: Provided serial_context pointer is null." << std::endl;
          return nullptr;
       }
 
